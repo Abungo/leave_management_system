@@ -33,28 +33,56 @@ The system employs a **modular, layered architecture** with Filament 3 as the pr
 
 ## Database Design
 
-The database schema, depicted in `er_diagram.png`, ensures efficiency and integrity:
+The database schema, depicted in `er_diagram.png`, is designed for efficiency, integrity, and scalability, supporting the core features of user management, leave requests, balances, and holidays. The schema uses SQLite (default) or MySQL (via Docker) with Eloquent ORM for secure queries.
+
+### Tables
 
 - **Users**:
-  - Fields: `id`, `name`, `email`, `password`, `role` (employee/admin), `is_active`.
-  - `role` drives Filament visibility; `is_active` controls account access.
+  - **Fields**: `id` (PK, auto-increment), `name` (varchar), `email` (varchar, unique), `password` (varchar), `role` (varchar, default: 'employee'), `is_active` (boolean, default: false), `email_verified_at` (timestamp, nullable), `remember_token` (varchar, nullable), `created_at` (timestamp), `updated_at` (timestamp).
+  - **Purpose**: Stores employee and admin data; `role` (employee/admin) drives Filament 3 dashboard visibility; `is_active` controls account activation.
 
-- **Leave Requests**:
-  - Fields: `id`, `user_id`, `leave_type` (Casual/Earned), `start_date`, `end_date`, `status` (Pending/Approved/Rejected), `reason`.
-  - Foreign key `user_id` links to `users`.
+- **Sessions**:
+  - **Fields**: `id` (PK, varchar), `user_id` (int, FK to `users.id`), `ip_address` (varchar, nullable), `user_agent` (text, nullable), `payload` (text), `last_activity` (int).
+  - **Purpose**: Tracks user sessions for secure authentication and activity monitoring.
+
+- **Leave Types**:
+  - **Fields**: `id` (PK, auto-increment), `name` (varchar, e.g., 'Casual', 'Earned'), `max_days` (int), `created_at` (timestamp), `updated_at` (timestamp).
+  - **Purpose**: Defines available leave types and their maximum allowable days per year.
+
+- **Leave Applications**:
+  - **Fields**: `id` (PK, auto-increment), `user_id` (int, FK to `users.id`, not null, cascade delete), `leave_type_id` (int, FK to `leave_types.id`, not null), `start_date` (date), `end_date` (date), `days_taken` (int), `reason` (text), `status` (varchar, enum: 'pending', 'approved', 'rejected', default: 'pending'), `admin_comment` (text, nullable), `created_at` (timestamp), `updated_at` (timestamp).
+  - **Purpose**: Records leave requests, including duration, status, and admin feedback; linked to users and leave types.
 
 - **Leave Balances**:
-  - Fields: `id`, `user_id`, `leave_type`, `balance`.
-  - Auto-updates on request submission/rejection.
+  - **Fields**: `id` (PK, auto-increment), `user_id` (int, FK to `users.id`, not null, cascade delete), `leave_type_id` (int, FK to `leave_types.id`, not null), `year` (year), `balance` (int), `created_at` (timestamp), `updated_at` (timestamp).
+  - **Indexes**: Unique composite index on (`user_id`, `leave_type_id`, `year`) to prevent duplicate balances.
+  - **Purpose**: Tracks annual leave balances per user and leave type; auto-updates on request submission/rejection.
 
-- **Holidays**:
-  - Fields: `id`, `date`, `name`.
-  - Excludes non-working days from leave calculations.
+### Relationships
 
-- **Design Principles**:
-  - **Normalization**: 3NF to reduce redundancy.
-  - **Constraints**: Foreign keys, unique `email`.
-  - **Indexing**: On `user_id` for fast queries.
+- **Users ↔ Leave Applications**: One-to-many (`user_id` FK in `leave_applications`); a user can have multiple leave requests.
+- **Users ↔ Leave Balances**: One-to-many (`user_id` FK in `leave_balances`); a user has multiple balance records (per leave type/year).
+- **Leave Types ↔ Leave Applications**: One-to-many (`leave_type_id` FK in `leave_applications`); a leave type applies to multiple requests.
+- **Leave Types ↔ Leave Balances**: One-to-many (`leave_type_id` FK in `leave_balances`); a leave type tracks balances for multiple users.
+- **Users ↔ Sessions**: One-to-many (`user_id` FK in `sessions`); a user can have multiple active sessions.
+
+### Design Principles
+
+- **Normalization**: 3NF to minimize redundancy (e.g., separate `leave_types` and `leave_balances` tables).
+- **Constraints**:
+  - Primary keys (`id`, `email`) ensure uniqueness.
+  - Foreign keys (`user_id`, `leave_type_id`) with cascade delete maintain referential integrity.
+  - Unique constraints on `email` (users) and (`user_id`, `leave_type_id`, `year`) (leave_balances).
+  - Enum `status` in `leave_applications` enforces valid states.
+- **Indexing**: Indexes on `user_id`, `leave_type_id`, `start_date`, and `end_date` for fast queries (e.g., leave history, balance checks).
+- **Scalability**: Partition-ready for `leave_applications` (e.g., by year) to handle large datasets.
+- **Holidays**: Assumed to be managed programmatically or via a separate `holidays` table (not provided but implied), excluding weekends and public holidays from `days_taken` calculations.
+
+### Notes
+
+- **Holidays**: The system excludes Saturdays, Sundays, and public holidays from leave calculations, using a `holidays` table.
+- **Balance Updates**: `leave_balances.balance` is deducted on request submission and restored if rejected, ensuring real-time accuracy.
+- **ER Diagram**: `er_diagram.png` reflects these tables and relationships.
 
 ## Web Application Security
 
