@@ -14,12 +14,11 @@ The system employs a **modular, layered architecture** with Filament 3 as the pr
 
 - **Presentation Layer**:
   - **Filament 3 Dashboard**: Single Dashboard UI for employees and admins.
-  - Role-based visibility: Employees see leave application and balance pages Holidays and ; admins see user management, leave approvals, holidays, and reports.
-  - Dynamic page rendering using Laravel’s role-checking logic (e.g., middleware or Filament policies).
+  - Role-based visibility: Employees see leave application,leave balance,leave history and Holidays pages and Admins see user management, leave approvals, holidays, and reports.
+  - Dynamic page rendering using Laravel’s role-checking logic (e.g., Filament policies).
 
 - **Application Layer**:
-  - Laravel controllers and Filament resources handle business logic (e.g., leave validation, balance updates, report generation).
-  - Services and repositories encapsulate core logic (e.g., holiday exclusion, notification triggers) for reusability.
+  - Filament resources handle business logic (e.g., leave validation, balance updates, report generation).
 
 - **Data Layer**:
   - SQLite (default) or MySQL (via Docker) with Eloquent ORM for secure, efficient queries.
@@ -55,8 +54,7 @@ The database schema, depicted in `er_diagram.png`, ensures efficiency and integr
 - **Design Principles**:
   - **Normalization**: 3NF to reduce redundancy.
   - **Constraints**: Foreign keys, unique `email`.
-  - **Indexing**: On `user_id`, `date` for fast queries.
-  - **Scalability**: Partition-ready for large datasets.
+  - **Indexing**: On `user_id` for fast queries.
 
 ## Web Application Security
 
@@ -64,13 +62,12 @@ The system prioritizes security, leveraging Filament 3 and Laravel features:
 
 - **Authentication**:
   - Filament Authentication with Bcrypt-hashed passwords.
-  - Role-based access control (RBAC) via `role` field, enforced in Filament policies or middleware.
+  - Role-based access control (RBAC) via `role` field, enforced in Filament policies.
   - Employees cannot access admin pages; visibility is dynamically hidden.
 
 - **Data Protection**:
   - HTTPS for secure communication.
   - CSRF tokens (Laravel middleware) prevent cross-site attacks.
-  - XSS prevention via Blade escaping and Filament’s input sanitization.
 
 - **Database Security**:
   - Eloquent ORM prevents SQL injection with parameterized queries.
@@ -81,7 +78,7 @@ The system prioritizes security, leveraging Filament 3 and Laravel features:
   - Configurable timeouts to prevent unauthorized access.
 
 - **Additional Measures**:
-  - Rate limiting on login attempts.
+  - Rate limiting on login attempts(5 attempts per minute).
   - Input validation (e.g., leave dates, emails) in Filament forms.
   - Regular Composer updates to patch vulnerabilities.
 
@@ -94,53 +91,40 @@ The codebase follows strict standards for maintainability:
   - Consistent naming (e.g., `LeaveRequestResource`, `leave_requests`).
 
 - **Laravel/Filament Conventions**:
-  - Filament resources (e.g., `UserResource`, `LeaveRequestResource`) for dashboard pages.
+  - Filament resources (e.g., `UserResource`, `LeaveApplicationResource`) for dashboard pages.
   - Routes in `routes/web.php` with RESTful names (e.g., `leave.request.store`).
 
 - **Code Quality**:
   - Type hints and return types for robustness.
   - Docblocks for classes/methods.
-  - Separation of concerns: Filament resources for UI, services for logic.
-
-- **Testing**:
-  - PHPUnit tests for leave requests, balance updates, and role checks.
-  - Factories/seeders for test data.
-
-- **Version Control**:
-  - Descriptive commits (e.g., “Add role-based visibility for Filament”).
-  - `.gitignore` excludes `.env`, `node_modules`.
-
-- **Tools**:
-  - Laravel Pint for style enforcement.
-  - PHPStan for static analysis.
 
 ## Key Features
 
 - **User Management**:
-  - Employees register; admins activate accounts via Filament.
+  - Employees register; admins activate accounts via Filament Dashboard.
   - Role-based dashboard visibility (employee/admin).
 
 - **Leave Request**:
   - Employees submit Casual/Earned leave requests in Filament.
-  - Admins approve/reject with notifications.
+  - Admins approves or rejects.
 
 - **Leave Balance**:
   - Real-time balance tracking in Filament dashboard.
-  - Auto-deducts/restores based on request status.
+  - Deducts leave balance when submitting application.
+  - Restores leave balance when Rejected.
 
 - **Holidays**:
   - Excludes weekends and holidays, managed in Filament.
   - Ensures accurate leave calculations.
 
 - **Reports**:
-  - Employees view leave history/summaries in Filament.
-  - Admins generate/export reports (CSV/PDF).
+  - Employees view their own leave history/summaries in Filament.
+  - Admins see all of the employee's history/summaries.
 
 ## Technology Stack
 
 - **Backend**: [Laravel 12](https://laravel.com/)
 - **UI**: [Filament 3](https://filamentphp.com/) (main dashboard)
-- **Frontend**: Tailwind CSS
 - **Authentication**: Filament Authentication
 - **Database**: SQLite (default) or MySQL (Docker)
 - **Security**: HTTPS, Bcrypt, CSRF/XSS/SQL injection protection
@@ -160,12 +144,11 @@ See `er_diagram.png` for the database structure.
 - **Composer**: [Install](https://getcomposer.org/download/)
 - **Node.js & npm**: Optional, [Install](https://nodejs.org/)
 - **Docker**: Optional for MySQL, [Install](https://www.docker.com/get-started/)
-- **Git**
+- **Git** Optional
 
 ### Setup Steps
 
-<details>
-<summary>Click to expand setup instructions</summary>
+
 
 1. **Clone the Repository**
 
@@ -192,7 +175,7 @@ See `er_diagram.png` for the database structure.
    **SQLite (Default)**:
 
    ```bash
-   cp .env.example .env
+   cp .env.sqlite .env
    ```
 
    ```env
@@ -214,7 +197,7 @@ See `er_diagram.png` for the database structure.
    DB_HOST=127.0.0.1
    DB_PORT=3306
    DB_DATABASE=leave_management
-   DB_USERNAME=root
+   DB_USERNAME=laravel
    DB_PASSWORD=secret
    ```
 
@@ -261,22 +244,21 @@ The Filament 3 dashboard serves as the main interface for both employees and adm
 
 1. **Register**:
    - Visit `http://localhost:8000`, click **Register**, and submit details (name, email, password).
-   - Await admin activation (notified via email/dashboard).
+   - Await admin activation.
 
 2. **Log In**:
    - Access `http://localhost:8000`, enter email/password to view the employee dashboard.
 
 3. **Apply for Leave**:
-   - In the Filament dashboard, navigate to **Leave Requests** (visible to employees).
-   - Click **Create**, select **Casual** or **Earned Leave**, enter dates, and submit.
+   - In the Filament dashboard, navigate to **Apply for Leave** (visible to employees as well as admins are admins are also employees and needs to apply for the leave when required).
+   - Click **New Leave Application**, select **Casual** or **Earned Leave**, enter start date and end date (both dates inclusive), and submit.
    - System excludes weekends/holidays; balance deducts instantly, restored if rejected.
-   - Check notifications for approval/rejection status.
 
 4. **Track Leave Balance**:
    - View real-time **Casual/Earned** balances in the **Leave Balances** section.
 
 5. **View Reports**:
-   - Access **Reports** section for leave history (past/pending requests) and balance summaries.
+   - Access **Reports** section for leave history and  summaries.
 
 ### For Administrators
 
@@ -284,26 +266,25 @@ The Filament 3 dashboard serves as the main interface for both employees and adm
    - Visit `http://localhost:8000`, log in with admin credentials to access the full dashboard.
 
 2. **Manage Users**:
-   - In **Users** section, view registered employees.
-   - Activate accounts by setting `is_active` to true or edit/deactivate as needed.
+   - In **Manage Users** section, view registered employees.
+   - Activate accounts by setting `is_active` toggle to off/on.
 
 3. **Manage Leave Requests**:
-   - In **Leave Requests**, view pending requests (employee, type, dates).
-   - Approve or reject; notifications sent to employees.
+   - In **Manage Leave Applications**, view pending requests (employee, type, dates).
+   - Approve or reject;.
 
 4. **Manage Holidays**:
    - In **Holidays**, add/edit/delete public holidays (e.g., `2025-12-25`, “Christmas”).
    - Ensures accurate leave calculations.
 
 5. **Generate Reports**:
-   - In **Reports**, view/export:
+   - In **Reports**:
      - **Employee Leave History**: Detailed records per employee.
-     - **Organization-Wide Summary**: Leave usage across employees (CSV/PDF).
+     - **Organization-Wide Summary**: Leave usage across employees(Table).
 
 ### Notes
 - **Role-Based Visibility**: Employees see only leave-related features; admins see all management tools.
 - **Holidays**: Keep holiday calendar updated.
-- **Notifications**: Check email/dashboard for updates.
 
 ## Contributing 🤝
 
