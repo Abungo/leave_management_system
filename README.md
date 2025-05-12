@@ -33,7 +33,7 @@ The system employs a **modular, layered architecture** with Filament 3 as the pr
 
 ## Database Design
 
-The database schema, depicted in `er_diagram.png`, is designed for efficiency, integrity, and scalability, supporting the core features of user management, leave requests, balances, and holidays. The schema uses SQLite (default) or MySQL (via Docker) with Eloquent ORM for secure queries.
+The database schema, depicted in [`er_diagram.png`](./er_diagram.png), is designed for efficiency, integrity, and scalability, supporting the core features of user management, leave requests, balances, and holidays. The schema uses SQLite (default) or MySQL (via Docker) with Eloquent ORM for secure queries.
 
 ### Tables
 
@@ -159,7 +159,8 @@ The codebase follows strict standards for maintainability:
 
 ## ER Diagram 📊
 
-See `er_diagram.png` for the database structure.
+See [`er_diagram.png`](./er_diagram.png) for the database structure.
+
 ![image](er_diagram.png)
 
 > **Note**: Ensure `er_diagram.png` is in the project root.
